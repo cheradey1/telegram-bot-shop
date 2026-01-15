@@ -21,17 +21,19 @@ PRODUCTS = {
     "admin": ("🛡 Адмін-бот", 99),
 }
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [
+def main_menu():
+    return InlineKeyboardMarkup([
         [InlineKeyboardButton("🛒 Каталог ботів", callback_data="catalog")],
         [InlineKeyboardButton("📩 Задати питання", callback_data="question")]
-    ]
+    ])
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Вітаю 👋\n\nЯ — магазин Telegram-ботів.\nОберіть дію 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=main_menu()
     )
 
-async def catalog(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def show_catalog(query):
     keyboard = []
     for key, (name, price) in PRODUCTS.items():
         keyboard.append([
@@ -42,7 +44,7 @@ async def catalog(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
     keyboard.append([InlineKeyboardButton("⬅️ Назад", callback_data="back")])
 
-    await update.callback_query.message.reply_text(
+    await query.message.reply_text(
         "🛒 Наші продукти:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
@@ -52,7 +54,7 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     if query.data == "catalog":
-        await catalog(update, context)
+        await show_catalog(query)
 
     elif query.data.startswith("buy_"):
         key = query.data.replace("buy_", "")
@@ -86,13 +88,17 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "question":
         await query.message.reply_text(
-            "✍️ Напишіть ваше питання або запит:"
+            "✍️ Напишіть ваше питання — я передам адміну."
         )
 
     elif query.data == "back":
-        await start(query, context)
+        await query.message.reply_text(
+            "⬅️ Повертаємось в меню",
+            reply_markup=main_menu()
+        )
 
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(buttons))
+
 app.run_polling()
